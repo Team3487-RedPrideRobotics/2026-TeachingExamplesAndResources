@@ -4,6 +4,8 @@ public class GeneratedSubsystemMotorConfig{
 
     int motorCanID;
 
+    String motorCanBus;
+
     double supplyCurrentLimit;
     double statorCurrentLimit;
 
@@ -23,8 +25,6 @@ public class GeneratedSubsystemMotorConfig{
     /** sets the forward rotating limit switch position in rotations*/ double  forwardLimitSwitchPosition;
     /** sets the reverse rotating limit switch position in rotations*/ double  reverseLimitSwitchPosition;
 
-    GainConfig feedForwardGainConfig;
-
     GainConfig positionGainConfig;
 
     GainConfig velocityGainConfig;
@@ -40,10 +40,24 @@ public class GeneratedSubsystemMotorConfig{
         reverseLimitSwitchPosition = 0; 
         isFollower = false;
         leaderCanID = 0;
+        motorCanBus = "";
     }
 
+    /**Sets the CanID of the motor that will be used in the config
+     * <p><b>WARNING</b>: if you change the CanID after making the motor IO, this cannot changed during operation!
+     */
     public GeneratedSubsystemMotorConfig withCanID(int canID){
         this.motorCanID = canID;
+        return this;
+    }
+
+    public GeneratedSubsystemMotorConfig withCanBus(String CanBus){
+        motorCanBus = CanBus;
+        return this;
+    } 
+
+    public GeneratedSubsystemMotorConfig withMotorToMechanismRatio(double ratio){
+        motorToMechanismRatio = ratio;
         return this;
     }
 
@@ -70,12 +84,6 @@ public class GeneratedSubsystemMotorConfig{
         this.reverseLimitSwitchPosition = turns;
         return this;
     }
-
-    /** sets the current feed forward gains to the ones supplied */
-    public GeneratedSubsystemMotorConfig withFeedForwardGainConfig(GainConfig feedForwardGainConfig){
-        this.feedForwardGainConfig = feedForwardGainConfig;
-        return this;
-    }
     
     /** sets the current position gains to the ones supplied */
     public GeneratedSubsystemMotorConfig withPositionGainConfig(GainConfig positionGainConfig){
@@ -89,11 +97,13 @@ public class GeneratedSubsystemMotorConfig{
         return this;
     }
 
+    /** Sets if the motor should be a follower */
     public GeneratedSubsystemMotorConfig withFollowerStatus(boolean isFollower){
         this.isFollower = isFollower;
         return this;
     }
 
+    /** If the motor is set to be a follower, this will set what CAN Id motor it should follow */
     public GeneratedSubsystemMotorConfig withLeaderCanID(double canID){
         leaderCanID = canID;
         return this;

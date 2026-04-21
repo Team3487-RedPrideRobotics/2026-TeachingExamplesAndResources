@@ -7,6 +7,7 @@ public class GainConfig {
     double kI = 0;
     double kD = 0;
     double kG = 0;
+    double kV = 0;
 
     public GainConfig withkA(double newkA){
         kA = newkA;
@@ -35,6 +36,11 @@ public class GainConfig {
     
     public GainConfig withkG(double newkG){
         kG = newkG;
+        return this;
+    }
+
+    public GainConfig withkV(double newkV){
+        kG = newkV;
         return this;
     }
     
