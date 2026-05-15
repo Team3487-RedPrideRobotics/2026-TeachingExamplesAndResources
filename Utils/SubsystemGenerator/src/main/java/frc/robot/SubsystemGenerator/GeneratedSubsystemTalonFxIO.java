@@ -41,6 +41,7 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
     private Follower          followerControl;
 
     public GeneratedSubsystemTalonFxIO(){
+        motor = new TalonFX(0);
         positionPID = new PositionDutyCycle(0);
         velocityPID = new VelocityDutyCycle(0);
         dutyCycle   = new DutyCycleOut(0);
@@ -93,7 +94,13 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
         config.Slot0 = positionConfig;
         config.Slot1 = velocityConfig;
 
+
         return config;
+    }
+
+    public GeneratedSubsystemTalonFxIO addTalonFx(int MotorID){
+        motor = new TalonFX(MotorID);
+        return this;
     }
 
     @Override
@@ -102,6 +109,8 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
         motor.getConfigurator().apply(convertMotorConfigToTalonConfig(config));
         positionPID.Slot = 0;
         velocityPID.Slot = 1;
+
+        ratio = config.motorToMechanismRatio;
 
         followerControl.withLeaderID((int) config.leaderCanID);
 
@@ -116,8 +125,14 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
     }
 
     @Override
-    public void setPositionGoal(double position) {
-        positionPID.withPosition(position);
+    public void setPositionGoal(double goal) {
+        positionPID.withPosition(goal);
+        motor.setControl(positionPID);
+    }
+
+    @Override
+    public void setIntigratedPositionGoal(double goal) {
+        positionPID.withPosition(goal/ratio);
         motor.setControl(positionPID);
     }
 

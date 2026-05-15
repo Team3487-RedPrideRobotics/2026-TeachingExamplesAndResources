@@ -19,21 +19,24 @@ public class RobotContainer {
   GeneratedSubsystemMechanism armSubsystemMechanism;
   GeneratedSubsystemMotorConfig armMotorConfig; 
 
+  GeneratedSubsystem intakeSubsystem;
+
   CommandXboxController controller;
 
   public RobotContainer() {
+    controller = new CommandXboxController(0);
+
+    intakeSubsystem = new GeneratedSubsystem("intake")
+                            .assignMechanism(new GeneratedSubsystemMechanism("IntakeSlapdown")
+                              .addMotor("slapdown1", new GeneratedSubsystemTalonFxIO().addTalonFx(2))
+                              .applyMotorConfig("slapdown1", Constants.intakeConfig));
+  
     configureBindings();
-
-    armSubsystem = new GeneratedSubsystem("Arm");
-
-    armSubsystemMechanism = new GeneratedSubsystemMechanism("armPivot")
-                                .addMotor("armMotor1", 
-                            new GeneratedSubsystemTalonFxIO())
-                            .applyMotorConfig("armMotor1", armMotorConfig);
   }
 
   private void configureBindings() {
-    controller.a().whileTrue(armSubsystem.getMechanismPIDPositionCommand("armPivot", 1, 0.1));
+    controller.a().whileTrue(intakeSubsystem.getMechanismPIDPositionCommand("IntakeSlapdown", 0.25, 0.1,true));
+    controller.b().whileTrue(intakeSubsystem.getMechansimFeedForwardCommand("IntakeSlapdown", 0.1));
   }
 
   public Command getAutonomousCommand() {

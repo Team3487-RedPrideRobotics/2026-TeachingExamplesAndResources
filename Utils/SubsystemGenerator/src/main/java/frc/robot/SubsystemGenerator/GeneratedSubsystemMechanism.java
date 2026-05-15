@@ -19,15 +19,16 @@ import org.littletonrobotics.junction.Logger;
 public class GeneratedSubsystemMechanism extends SubsystemBase{
 
     Map<String,GeneratedSubsystemMotorIO> motors;
-    Map<String,IOInputsAutoLogged> ioInputs;
+    Map<String,IOInputsAutoLogged> ioInputs;    
 
     GeneratedSubsystem parentSubsystem;
 
     /**Default constructor
-     * <p>No two mechanisms are allowed to have the same name
-     */
+     * <p>No two mechanisms are allowed to have the same name*/
     public GeneratedSubsystemMechanism(String name){
         this.setName(name);
+        motors = Map.of();
+        ioInputs = Map.of();
     }
 
     protected void setParentSubsystem(GeneratedSubsystem parentSubsystem){
@@ -43,28 +44,35 @@ public class GeneratedSubsystemMechanism extends SubsystemBase{
         return this;
     }
 
-    public boolean pidPositionMechanism(double SetPoint,double tolerance){
+    public boolean pidPositionMechanism(double SetPoint,double tolerance,boolean isIntigrated){
         boolean done = false;
         double avgRotation = 0;
         for (String motor : motors.keySet()) {
-            if(avgRotation == 0){avgRotation = ioInputs.get(motor).MotorIntigratedPosition;}
-            avgRotation = avgRotation + ioInputs.get(motor).MotorIntigratedPosition;
+            if(avgRotation == 0){avgRotation = isIntigrated?ioInputs.get(motor).MotorIntigratedPosition:ioInputs.get(motor).MotorRelativePosition;}
+            avgRotation = avgRotation + (isIntigrated?ioInputs.get(motor).MotorIntigratedPosition:ioInputs.get(motor).MotorRelativePosition);
             avgRotation = avgRotation/2;
         }
         for (String motor : motors.keySet()){
             if(Math.abs(SetPoint-avgRotation)>tolerance){
-            motors.get(motor).setPositionGoal(SetPoint);}
+            if(!isIntigrated){motors.get(motor).setPositionGoal(SetPoint);}else{motors.get(motor).setIntigratedPositionGoal(SetPoint);}}
             else{motors.get(motor).stopMotor(); done = true;}
         }
         return done;
     }
 
+    public boolean intigratedPidPositionMechanism(double SetPoint,double tolerance){
+        boolean done = pidPositionMechanism(SetPoint, tolerance,true);
+        return done;
+    }
+
+    /**Set the mechanism to PID to the supplied rpm*/
     public void pidVelocityMechanism(double goalRpm){
         for (String motor : motors.keySet()) {
             motors.get(motor).setVelocityGoal(goalRpm);
         }
     }
 
+    /**Stop all motors in the mechanism */
     public void stopMechanism(){
         for (String motor : motors.keySet()) {
             motors.get(motor).stopMotor();

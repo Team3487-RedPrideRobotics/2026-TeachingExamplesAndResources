@@ -27,12 +27,14 @@ public class GeneratedSubsystem{
      * <p> Provide with the new subsystem name*/
     public GeneratedSubsystem(String Name){
         subsystemName = Name;
+        mechanisms = Map.of();
     }
 
     /**Alternate constructor
      * <p> Provide with name and starting mechanism*/
     public GeneratedSubsystem(String Name, GeneratedSubsystemMechanism baseMechansim){
         subsystemName = Name;
+        mechanisms = Map.of();
         assignMechanism(baseMechansim);
     }
 
@@ -87,7 +89,7 @@ public class GeneratedSubsystem{
         return mechanismCommand;
     }
 
-    public Command getMechanismPIDPositionCommand(String mechanismName, double position, double tolerance){
+    public Command getMechanismPIDPositionCommand(String mechanismName, double position, double tolerance, boolean inIntigrated){
         Command mechanismCommand = new Command() {
             private GeneratedSubsystemMechanism mechanism;
             private boolean done;
@@ -99,7 +101,7 @@ public class GeneratedSubsystem{
             }
             @Override
             public void execute() {
-                done = mechanism.pidPositionMechanism(position, tolerance);
+                done = mechanism.pidPositionMechanism(position, tolerance,inIntigrated);
             }
             @Override
             public boolean isFinished() {
