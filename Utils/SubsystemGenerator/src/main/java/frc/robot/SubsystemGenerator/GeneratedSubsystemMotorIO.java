@@ -1,17 +1,17 @@
 package frc.robot.SubsystemGenerator;
 
-import org.littletonrobotics.junction.AutoLog;
 
 /**Default IO interface for a generated subsystem */
 public interface GeneratedSubsystemMotorIO {
     
-    @AutoLog
     public static class IOInputs{
+        public String canID                  = "";
         public double MotorRelativeRPM       = 0;
         public double MotorRelativePosition  = 0;
         public double MotorIntigratedPosition= 0;
         public double MotorVolts             = 0;
         public double MotorTemp              = 0;
+        public double MotorCurrentDraw       = 0;
     }
 
     /**supply a generatedSubsystemMotorConfig to instance the motor
@@ -21,18 +21,25 @@ public interface GeneratedSubsystemMotorIO {
     public default void setConfig(GeneratedSubsystemMotorConfig config){}
 
     /**Set the motor to PID to the provided position on the motor*
-     * <p> <b>Units:</b> Turns*/
+     *@param goal rotations
+     */
     public default void setPositionGoal(double goal){}
 
-    /**Update the current percieved rotation of the motor */
+    /**Update the current percieved rotation of the motor
+     *@param position rotations
+     */
     public default void setPosition(double position){}
 
     /**Set the motor to PID to the provided position on the mechanism
-     *<p> <b>Units:</b> Turns*/
+     *@param goal rotations
+     */
     public default void setIntigratedPositionGoal(double goal){}
 
-    /**Set the motor to start spinning at the proveded speed from -1-1*/
+    /**Set the motor to start spinning at the provided speed from -1 to 1*/
     public default void setFeedForwardSpeed(double speed){}
+
+    /**Set the motor to start spinning at the provided speed from -1 to 1 relative to its */
+    public default void setIntigratedFeedForwardSpeed(double speed){}
 
     /**Set the motor to PID to the provided velocity of itself*/
     public default void setVelocityGoal(double goal){}
@@ -45,6 +52,18 @@ public interface GeneratedSubsystemMotorIO {
     /**Set the motor to start following its leader motor*/
     public default void followLeaderMotor(){}
 
+    /**Set the motor to full stop */
     public default void stopMotor(){}
-    
+
+    /**Sets the motor's angle in sim to the provided angle
+     * <p> For use by GeneratedSubsystemMecanism during sim
+     *    @param Angle rotations
+     */
+    public default void updateMotorSimAngle(double Angle){}
+
+    /**Sets the motor's anglular velocity in sim to the provided angle
+     * <p>For use by GeneratedSubsystemMecanism during sim
+     *    @param AngularVelocity rps
+     */
+    public default void updateMotorSimAnglularVelocity(double AngularVelocity){}
 }

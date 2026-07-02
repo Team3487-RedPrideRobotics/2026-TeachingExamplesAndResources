@@ -19,19 +19,39 @@ public class Robot extends LoggedRobot {
 
   private final RobotContainer m_robotContainer;
 
+  public static enum Mode {
+    /** Running on a real robot. */
+    REAL,
+    /** Running a physics simulator. */
+    SIM,
+    /** Replaying from a log file. */
+    REPLAY}
+  
+  public static Mode currentMode = Mode.SIM;
+  
   public Robot() {
-   Logger.recordMetadata("ProjectName", "MyProject"); // Set a metadata value
+   Logger.recordMetadata("SubsystemGenerator", "RPR2026 0.1.1"); // Set a metadata value
 
-   if (isReal()) {
-    Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
-    Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
-   } 
-   else {
-    setUseTiming(false); // Run as fast as possible
-    String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
-    Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
-    Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
+   // Run data retrieval and logging depending on the 
+   switch(currentMode){
+    case REAL:
+      //On a real robot, logs to /U/Logs
+      Logger.addDataReceiver(new WPILOGWriter()); // Log to a USB stick ("/U/logs")
+      Logger.addDataReceiver(new NT4Publisher()); // Publish data to NetworkTables
+      break;
+    case SIM:
+      //In Simulator but not replay
+      Logger.addDataReceiver(new NT4Publisher());
+      break; 
+    case REPLAY:
+      //Replaying the selected file in advantage kit if any are available
+      setUseTiming(false); // Run as fast as possible
+      String logPath = LogFileUtil.findReplayLog(); // Pull the replay log from AdvantageScope (or prompt the user)
+      Logger.setReplaySource(new WPILOGReader(logPath)); // Read replay log
+      Logger.addDataReceiver(new WPILOGWriter(LogFileUtil.addPathSuffix(logPath, "_sim"))); // Save outputs to a new log
+      break;
    }
+   
    Logger.start();
 
    m_robotContainer = new RobotContainer();

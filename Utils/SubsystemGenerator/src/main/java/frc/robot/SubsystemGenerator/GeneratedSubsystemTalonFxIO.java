@@ -12,23 +12,32 @@ import com.ctre.phoenix6.controls.PositionDutyCycle;
 import com.ctre.phoenix6.controls.VelocityDutyCycle;
 import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.signals.InvertedValue;
+import com.ctre.phoenix6.signals.NeutralModeValue;
+import com.ctre.phoenix6.sim.TalonFXSimState;
 
 import edu.wpi.first.units.measure.Angle;
 import edu.wpi.first.units.measure.AngularVelocity;
+import edu.wpi.first.units.measure.Current;
 import edu.wpi.first.units.measure.Temperature;
 import edu.wpi.first.units.measure.Voltage;
+import edu.wpi.first.wpilibj.RobotBase;
 
 /**IO interface to be used with TalonFX motor controllers in the subsystem generator */
 public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
 
     //status signal definition
-    private final StatusSignal<Angle>           position;
-    private final StatusSignal<AngularVelocity> rps;
-    private final StatusSignal<Temperature>     temperature;
-    private final StatusSignal<Voltage>         voltage;
+    private StatusSignal<Angle>           position;
+    private StatusSignal<AngularVelocity> rps;
+    private StatusSignal<Temperature>     temperature;
+    private StatusSignal<Voltage>         voltage;
+    private StatusSignal<Current>         current;
 
     //motor definition
     private TalonFX motor;
+
+    private TalonFXSimState motorSimState;
+
+    private GeneratedSubsystemMotorConfig motorConfig;
 
     private double ratio;
 
@@ -42,6 +51,8 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
 
     public GeneratedSubsystemTalonFxIO(){
         motor = new TalonFX(0);
+        motorSimState = motor.getSimState();
+
         positionPID = new PositionDutyCycle(0);
         velocityPID = new VelocityDutyCycle(0);
         dutyCycle   = new DutyCycleOut(0);
@@ -50,17 +61,24 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
         temperature = motor.getDeviceTemp();
         rps         = motor.getVelocity();
         voltage     = motor.getMotorVoltage();
+        current     = motor.getStatorCurrent();
+
         BaseStatusSignal.setUpdateFrequencyForAll(50, position,rps,temperature,voltage);
     } 
 
     @Override
     public void updateIOInputs(IOInputs IOInputs) {
-        IOInputs.MotorIntigratedPosition = ratio*position.getValueAsDouble();
+        IOInputs.canID                   = motorConfig.motorCanBus+motorConfig.motorCanID;
+        IOInputs.MotorIntigratedPosition = position.getValueAsDouble()/ratio;
         IOInputs.MotorRelativePosition   = position.getValueAsDouble();
         IOInputs.MotorRelativeRPM        = rps.getValueAsDouble()*60;
         IOInputs.MotorTemp               = temperature.getValueAsDouble();
         IOInputs.MotorVolts              = voltage.getValueAsDouble();
-        BaseStatusSignal.refreshAll(position,rps,temperature,voltage);
+        IOInputs.MotorCurrentDraw        = current.getValueAsDouble();
+        BaseStatusSignal.refreshAll(position,rps,temperature,voltage,current);
+        if(RobotBase.isSimulation()){
+        IOInputs.MotorVolts              = motorSimState.getMotorVoltage();
+        }
     }
 
     private TalonFXConfiguration convertMotorConfigToTalonConfig(GeneratedSubsystemMotorConfig inputConfig){
@@ -70,6 +88,7 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
         Slot1Configs velocityConfig = new Slot1Configs();
         
         config.MotorOutput.withInverted(inputConfig.isInverted?InvertedValue.Clockwise_Positive:InvertedValue.CounterClockwise_Positive);
+        config.MotorOutput.withNeutralMode(inputConfig.neutralBrakingMode?NeutralModeValue.Brake:NeutralModeValue.Coast);
         config.SoftwareLimitSwitch.ForwardSoftLimitEnable = inputConfig.forwardLimitSwitchEnabled;
         config.SoftwareLimitSwitch.ReverseSoftLimitEnable = inputConfig.reverseLimitSwitchEnabled;
         config.SoftwareLimitSwitch.ForwardSoftLimitThreshold = inputConfig.forwardLimitSwitchPosition;
@@ -105,16 +124,32 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
 
     @Override
     public void setConfig(GeneratedSubsystemMotorConfig config) {
-        if(motor==null){motor = new TalonFX(config.motorCanID,new CANBus(config.motorCanBus));}
+        motorConfig = config;
+        if(motor==null){
+            //if motor doesnt exist, make one
+            motor = new TalonFX(config.motorCanID,new CANBus(config.motorCanBus));}
+        else{
+            //if motor already exists, replace it
+            motor.close();
+            motor = new TalonFX(config.motorCanID,new CANBus(config.motorCanBus));}
         motor.getConfigurator().apply(convertMotorConfigToTalonConfig(config));
         positionPID.Slot = 0;
         velocityPID.Slot = 1;
 
         ratio = config.motorToMechanismRatio;
 
-        followerControl.withLeaderID((int) config.leaderCanID);
-
         isFollower = config.isFollower;
+
+        if(isFollower){
+        followerControl.withLeaderID((int) config.leaderCanID);}
+        
+        motorSimState = motor.getSimState();
+        
+        position    = motor.getPosition();
+        temperature = motor.getDeviceTemp();
+        rps         = motor.getVelocity();
+        voltage     = motor.getMotorVoltage();
+        current     = motor.getStatorCurrent();
     }
 
     @Override
@@ -126,19 +161,23 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
 
     @Override
     public void setPositionGoal(double goal) {
+        if(motorConfig.positionGainConfig.kP == 0){
+            System.err.println("ERROR!! \nP value for position gain is 0, if this is correct, carry on");}
         positionPID.withPosition(goal);
         motor.setControl(positionPID);
     }
 
     @Override
     public void setIntigratedPositionGoal(double goal) {
-        positionPID.withPosition(goal/ratio);
+        if(motorConfig.positionGainConfig.kP == 0){System.err.println("ERROR!! \nP value for position gain is 0, if this is correct, carry on");}
+        positionPID.withPosition(goal*ratio);
         motor.setControl(positionPID);
     }
 
     @Override
     public void setVelocityGoal(double goal) {
-        velocityPID.withVelocity(goal/60);
+        if(motorConfig.velocityGainConfig.kP == 0){System.err.println("ERROR!! \nP value for velocity gain is 0, if this is correct, carry on");}
+        velocityPID.withVelocity(goal);
         motor.setControl(velocityPID);
     }
 
@@ -148,9 +187,39 @@ public class GeneratedSubsystemTalonFxIO implements GeneratedSubsystemMotorIO {
     }
 
     @Override
+    public void setFeedForwardSpeed(double speed) {
+        dutyCycle.withOutput(speed);
+        motor.setControl(dutyCycle);
+    }
+
+    @Override
+    public void setIntigratedFeedForwardSpeed(double speed) {
+        dutyCycle.withOutput(speed*ratio);
+        motor.setControl(dutyCycle);
+
+    }
+
+    @Override
     public void stopMotor() {
         dutyCycle.withOutput(0);
         motor.setControl(dutyCycle);
         motor.stopMotor();
     }
+
+    @Override
+    public void setNuetralMode(boolean braking) {
+        motor.setNeutralMode(braking?NeutralModeValue.Brake:NeutralModeValue.Coast);
+    }
+
+    @Override
+    public void updateMotorSimAngle(double Angle) {
+        motorSimState.setRawRotorPosition(Angle*ratio);
+    }
+
+    @Override
+    public void updateMotorSimAnglularVelocity(double AngularVelocity) {
+        motorSimState.setRotorVelocity(AngularVelocity*ratio);
+    }
+
+
 }

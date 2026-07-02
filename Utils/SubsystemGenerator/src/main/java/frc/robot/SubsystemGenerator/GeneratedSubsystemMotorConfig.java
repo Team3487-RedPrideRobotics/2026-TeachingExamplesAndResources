@@ -1,5 +1,7 @@
 package frc.robot.SubsystemGenerator;
 
+import edu.wpi.first.math.system.plant.DCMotor;
+
 public class GeneratedSubsystemMotorConfig{
 
     int motorCanID;
@@ -29,8 +31,14 @@ public class GeneratedSubsystemMotorConfig{
 
     GainConfig velocityGainConfig;
 
+    DCMotor    simMotorType;
+
+    boolean neutralBrakingMode;
+
     public GeneratedSubsystemMotorConfig(){
         motorCanID = 0;
+        isInverted = false;
+        neutralBrakingMode = false;
         supplyCurrentLimit = 40;
         statorCurrentLimit = 60;
         motorToMechanismRatio = 1;
@@ -43,14 +51,24 @@ public class GeneratedSubsystemMotorConfig{
         motorCanBus = "";
         positionGainConfig = new GainConfig();
         velocityGainConfig = new GainConfig();
+        simMotorType = new DCMotor(0, 0, 0, 0, 0, 0);
     }
 
     /**Sets the CanID of the motor that will be used in the config
-     * <p><b>WARNING</b>: if you change the CanID after making the motor IO, this cannot changed during operation!
      * <p>Default is 0
      */
     public GeneratedSubsystemMotorConfig withCanID(int canID){
         this.motorCanID = canID;
+        return this;
+    }
+
+    public GeneratedSubsystemMotorConfig withIsInvertedValue(boolean isCWPositive){
+        this.isInverted = isCWPositive;
+        return this;
+    }
+
+    public GeneratedSubsystemMotorConfig withNeutralBreakingMode(boolean braking){
+        this.neutralBrakingMode = braking;
         return this;
     }
 
@@ -83,8 +101,7 @@ public class GeneratedSubsystemMotorConfig{
     }
 
     /** sets the ratio between the motor rotations and mechanism rotations
-     * <p> <b> EXAMPLE: </b> 
-     *  A 1/10 ratio would mean the mechanism makes one turn every 10 turns of the motor
+     * <p> Numbers above 1 are a reduction
      * <p> Default is 1
      * @param ratio   The ratio from the motor to the mechanism
     */
@@ -154,6 +171,14 @@ public class GeneratedSubsystemMotorConfig{
     */
     public GeneratedSubsystemMotorConfig withLeaderCanID(double canID){
         leaderCanID = canID;
+        return this;
+    }
+ 
+    /** Sets the DCMotor object used in sim 
+     * <p>Default is a DCMotor with all values as 0
+    */
+    public GeneratedSubsystemMotorConfig withDCMotorSim(DCMotor motor){
+        this.simMotorType = motor;
         return this;
     }
 
